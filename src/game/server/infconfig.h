@@ -190,6 +190,9 @@ MACRO_CONFIG_INT(InfHealBoomLifeSpan, inf_heal_boom_life_span, 10, 0, 100, CFGFL
 MACRO_CONFIG_INT(InfHealBoomMaxHeal, inf_heal_boom_maxheal, 3, 4, 10, CFGFLAG_SERVER, "Max heal of heal booms")
 MACRO_CONFIG_INT(InfHealBoomProbability, inf_heal_boom_probability, 20, 0, 100, CFGFLAG_SERVER, "Probability of super weapon being available after MinimalKill requirement")
 
+MACRO_CONFIG_INT(InfAirStrikeMinimalKills, inf_air_strike_minimal_kills, 2, 0, 30, CFGFLAG_SERVER, "Minimal number of kills before grenade stun ammunition can be found")
+MACRO_CONFIG_INT(InfAirStrikeProbability, inf_air_strike_probability, 30, 0, 100, CFGFLAG_SERVER, "Probability of super weapon being available after MinimalKill requirement")
+
 MACRO_CONFIG_INT(InfStunGrenadeMinimalKills, inf_stun_grenade_minimal_kills, 2, 0, 30, CFGFLAG_SERVER, "Minimal number of kills before grenade stun ammunition can be found")
 MACRO_CONFIG_INT(InfStunGrenadeProbability, inf_stun_grenade_probability, 30, 0, 100, CFGFLAG_SERVER, "Probability of super weapon being available after MinimalKill requirement")
 

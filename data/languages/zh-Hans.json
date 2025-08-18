@@ -168,6 +168,10 @@
 		"value": "归命师"
 	},
 	{
+		"key": "Artillery",
+		"value": "炮兵总督"
+	},
+	{
 		"key": "Magician",
 		"value": "魔术师"
 	},
@@ -966,5 +970,13 @@
 	{
 		"key": "infect leaver",
 		"value": "作为感染离开"
+	},
+	{
+		"key": "Communicated to headquarters, all artillery are loading!",
+		"value": "已通讯到总部，所有炮兵正在装弹！"
+	},
+	{
+		"key": "airstrike ready, your laser rifle now place it",
+		"value": "空袭指示器就绪，使用你的激光枪来发射它"
 	}
 ]}

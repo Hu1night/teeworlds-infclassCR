@@ -87,12 +87,19 @@ void CSuperWeaponIndicator::Tick()
 			m_OwnerChar->m_HasElasticHole = true;
 			m_OwnerChar->m_BroadcastElasticHoleReady = Server()->Tick();
 			GameServer()->SendChatTarget_Localization(m_Owner, CHATCATEGORY_SCORE, _("elastic hole ready, your grenade now disrupts space time"), NULL);	
-		} else
+		} else if(m_OwnerChar->GetClass() == PLAYERCLASS_REVIVER)
 		{
 			m_IsWarmingUp = false;
 			m_OwnerChar->m_HasHealBoom = true;
 			m_OwnerChar->m_BroadcastHealBoomReady = Server()->Tick();
 			GameServer()->SendChatTarget_Localization(m_Owner, CHATCATEGORY_SCORE, _("heal boom ready, your laser rifle now disrupts space time"), NULL);	
+		} else if(m_OwnerChar->GetClass() == PLAYERCLASS_ARTILLERY)
+		{
+			m_IsWarmingUp = false;
+			m_OwnerChar->m_HasAirStrike = true;
+			m_OwnerChar->m_BroadcastAirStrikeReady = Server()->Tick();
+			//m_OwnerChar->m_ActiveWeapon
+			GameServer()->SendChatTarget_Localization(m_Owner, CHATCATEGORY_SCORE, _("airstrike ready, your laser rifle now place it"), NULL);	
 		}
 	} 
 	else 	

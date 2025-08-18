@@ -47,6 +47,8 @@
 #include "laser-teleport.h"
 #include "police-shield.h"
 #include "anti-airmine.h"
+#include "artillery-projectile.h"
+#include "artillery-laser.h"
 
 //input count
 struct CInputCount
@@ -1669,6 +1671,10 @@ void CCharacter::FireWeapon()
 					new CLaser(GameWorld(), m_Pos, Direction, GameServer()->Tuning()->m_LaserReach*0.7f, m_pPlayer->GetCID(), Damage);
 					GameServer()->CreateSound(m_Pos, SOUND_RIFLE_FIRE);
 				}
+				else if (GetClass() == PLAYERCLASS_ARTILLERY) {
+					new CArtilleryProjectile(GameWorld(), m_pPlayer->GetCID(), m_Pos, Direction, Server()->TickSpeed() * 2, WEAPON_RIFLE);
+					GameServer()->CreateSound(m_Pos, SOUND_RIFLE_FIRE);
+				}
 				else
 				{
 					new CLaser(GameWorld(), m_Pos, Direction, GameServer()->Tuning()->m_LaserReach, m_pPlayer->GetCID(), Damage);
@@ -1780,6 +1786,29 @@ void CCharacter::CheckSuperWeaponAccess()
 						m_HasStunGrenade = true;
 						GameServer()->SendChatTarget_Localization(m_pPlayer->GetCID(), CHATCATEGORY_SCORE, _("stun grenades found..."), NULL);
 				} 
+			} 
+		}
+	}
+
+	if(GetClass() == PLAYERCLASS_ARTILLERY)
+	{
+		
+		if (!m_HasAirStrike) // Can't receive a white hole while having one available
+		{
+			// enable white hole probabilities
+			if (kills > g_Config.m_InfAirStrikeMinimalKills) 
+			{
+				if (random_int(0,100) < g_Config.m_InfAirStrikeProbability) 
+				{
+					//Scientist-laser.cpp will make it unavailable after usage and reset player kills
+					
+					//create an indicator object
+					if (m_HasIndicator == false) {
+						m_HasIndicator = true;
+						GameServer()->SendChatTarget_Localization(m_pPlayer->GetCID(), CHATCATEGORY_SCORE, _("Communicated to headquarters, all artillery are loading!"), NULL);
+						new CSuperWeaponIndicator(GameWorld(), m_Pos, m_pPlayer->GetCID());
+					}
+				}
 			} 
 		}
 	}
@@ -4534,11 +4563,10 @@ void CCharacter::ClassSpawnAttributes()
 			RemoveAllGun();
 			m_pPlayer->m_InfectionTick = -1;
 			m_Health = 10;
-			m_aWeapons[WEAPON_HAMMER].m_Got = true;
-			GiveWeapon(WEAPON_HAMMER, -1);
 			GiveWeapon(WEAPON_GUN, -1);
 			GiveWeapon(WEAPON_SHOTGUN, -1);
 			GiveWeapon(WEAPON_GRENADE, -1);
+			GiveWeapon(WEAPON_RIFLE, -1);
 			m_ActiveWeapon = WEAPON_GRENADE;
 			
 			GameServer()->SendBroadcast_ClassIntro(m_pPlayer->GetCID(), PLAYERCLASS_ARTILLERY);
@@ -5176,6 +5204,8 @@ int CCharacter::GetInfWeaponID(int WID)
 				return INFWEAPON_POLICE_RIFLE;
 			case PLAYERCLASS_REVIVER:
 				return INFWEAPON_REVIVER_RIFLE;
+			case PLAYERCLASS_ARTILLERY:
+				return INFWEAPON_ARTILLERY_RIFLE;
 			default:
 				return INFWEAPON_RIFLE;
 		}

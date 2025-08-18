@@ -29,6 +29,7 @@ private:
 	int m_Dmg;
 	int m_AirStrike;
 	int m_AirStrikeTotal;
+	int m_AirStrikeDeley;
 };
 
 #endif

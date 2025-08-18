@@ -3,6 +3,7 @@
 #include <game/generated/protocol.h>
 #include <game/server/gamecontext.h>
 #include <engine/server/roundstatistics.h>
+#include <engine/shared/config.h>
 
 #include "artillery-laser.h"
 #include "artillery-projectile.h"
@@ -19,6 +20,7 @@ CArtilleryLaser::CArtilleryLaser(CGameWorld *pGameWorld, vec2 Pos, vec2 Directio
 	m_EvalTick = 0;
 	m_AirStrike = AirStrike;
 	m_AirStrikeTotal = AirStrike;
+	m_AirStrikeDeley = AirStrikeDeley;
 	GameWorld()->InsertEntity(this);
 	DoBounce();
 }
@@ -84,8 +86,8 @@ void CArtilleryLaser::DoBounce()
 	else
 	{
 		m_AirStrike -= 2;
-		new CArtilleryProjectile(GameWorld(), m_Owner, m_Pos + vec2(-48.f * ((m_AirStrikeTotal - m_AirStrike - 1) % 3 ), -640.f), vec2(0.f, 1.f), Server()->TickSpeed() * 0.7f, WEAPON_GRENADE, m_Pos.y - 96.f);
-		new CArtilleryProjectile(GameWorld(), m_Owner, m_Pos + vec2(48.f * ((m_AirStrikeTotal - m_AirStrike - 1) % 3 ), -640.f), vec2(0.f, 1.f), Server()->TickSpeed() * 0.7f, WEAPON_GRENADE, m_Pos.y - 96.f);
+		new CArtilleryProjectile(GameWorld(), m_Owner, m_Pos + vec2(-48.f * ((m_AirStrikeTotal - m_AirStrike - 1) % g_Config.m_InfAirStrikeRange), -640.f), vec2(0.f, 1.f), Server()->TickSpeed() * 0.7f, WEAPON_GRENADE, m_Pos.y - 96.f);
+		new CArtilleryProjectile(GameWorld(), m_Owner, m_Pos + vec2(48.f * ((m_AirStrikeTotal - m_AirStrike - 1) % g_Config.m_InfAirStrikeRange), -640.f), vec2(0.f, 1.f), Server()->TickSpeed() * 0.7f, WEAPON_GRENADE, m_Pos.y - 96.f);
 	}
 }
 
@@ -96,7 +98,7 @@ void CArtilleryLaser::Reset()
 
 void CArtilleryLaser::Tick()
 {
-	if(Server()->Tick() > m_EvalTick+(Server()->TickSpeed()*200.f)/1000.0f)
+	if(Server()->Tick() > m_EvalTick+(Server()->TickSpeed()*m_AirStrikeDeley)/1000.0f)
 		DoBounce();
 }
 

@@ -4,6 +4,7 @@
 #include <base/vmath.h>
 #include <game/generated/protocol.h>
 #include <game/server/gamecontext.h>
+#include <engine/shared/config.h>
 
 #include "artillery-projectile.h"
 #include "artillery-laser.h"
@@ -38,12 +39,12 @@ vec2 CArtilleryProjectile::GetPos(float Time)
 	{
 		case WEAPON_GRENADE:
 			Curvature = 0;
-			Speed = GameServer()->Tuning()->m_GrenadeSpeed;
+			Speed = GameServer()->Tuning()->m_GrenadeSpeed * 2;
 			break;
 
 		case WEAPON_RIFLE:
 			Curvature = GameServer()->Tuning()->m_GrenadeCurvature;
-			Speed = GameServer()->Tuning()->m_GrenadeSpeed;
+			Speed = GameServer()->Tuning()->m_GrenadeSpeed * 2;
 			break;
 	}
 
@@ -79,8 +80,8 @@ void CArtilleryProjectile::Tick()
 		else if(m_Type == WEAPON_RIFLE && pOwnerChar)
 		{
 			new CArtilleryLaser(GameWorld(), CurPos, normalize(CurPos - PrevPos), 0.f, m_Owner, 0,
-					pOwnerChar->m_HasAirStrike ? 8 : 3,
-					200);
+					pOwnerChar->m_HasAirStrike ? g_Config.m_InfAirStrikeNumSuper : g_Config.m_InfAirStrikeNum,
+					g_Config.m_InfAirStrikeDeley);
 			if(pOwnerChar->m_HasAirStrike)
 			{
 				pOwnerChar->m_HasAirStrike = false;

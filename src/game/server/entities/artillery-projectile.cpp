@@ -7,7 +7,6 @@
 #include <engine/shared/config.h>
 
 #include "artillery-projectile.h"
-#include "artillery-laser.h"
 
 CArtilleryProjectile::CArtilleryProjectile(CGameWorld *pGameWorld, int Owner, vec2 Pos, vec2 Dir, int Span, int Type, float ExplodeHeight, int Dmg)
 : CEntity(pGameWorld, CGameWorld::ENTTYPE_ARTILLERY_PROJECTILE)
@@ -20,6 +19,8 @@ CArtilleryProjectile::CArtilleryProjectile(CGameWorld *pGameWorld, int Owner, ve
 	m_Owner = Owner;
 	m_Type = Type;
 	m_ExplodeHeight = ExplodeHeight;
+	m_AirStrikeLeft = 0;
+	m_AirStrikeTotal = 0;
 	m_StartTick = Server()->Tick();
 
 	GameWorld()->InsertEntity(this);
@@ -58,6 +59,33 @@ void CArtilleryProjectile::TickPaused()
 
 void CArtilleryProjectile::Tick()
 {
+	if(m_AirStrikeTotal)
+	{
+		if(Server()->Tick() >= m_DoAirStrikeTick)
+		{
+			if(m_AirStrikeLeft % 2)
+			{
+				m_AirStrikeLeft--;
+				new CArtilleryProjectile(GameWorld(), m_Owner, m_ActualPos + vec2((rand() % 48) - 23.5f, -640.f), vec2(0.f, 1.f), Server()->TickSpeed() * 0.7f, WEAPON_GRENADE, m_ActualPos.y - 32.f);
+			}
+			else
+			{
+				m_AirStrikeLeft -= 2;
+				new CArtilleryProjectile(GameWorld(), m_Owner,
+						m_ActualPos + vec2(-((rand() % 48) + 24.5f) * ((m_AirStrikeTotal - m_AirStrikeLeft - 1) % g_Config.m_InfAirStrikeRange), -640.f),
+						vec2(0.f, 1.f), Server()->TickSpeed() * 0.7f, WEAPON_GRENADE, m_ActualPos.y - 32.f);
+				new CArtilleryProjectile(GameWorld(), m_Owner,
+						m_ActualPos + vec2(((rand() % 48) + 24.5f) * ((m_AirStrikeTotal - m_AirStrikeLeft - 1) % g_Config.m_InfAirStrikeRange), -640.f),
+						vec2(0.f, 1.f), Server()->TickSpeed() * 0.7f, WEAPON_GRENADE, m_ActualPos.y - 32.f);
+			}
+			m_DoAirStrikeTick = Server()->Tick() + g_Config.m_InfAirStrikeDeley / (1000.f / Server()->TickSpeed());
+		}
+		if(m_AirStrikeLeft)
+			return;
+		else
+			GameServer()->m_World.DestroyEntity(this);
+	}
+	
 	float Pt = (Server()->Tick()-m_StartTick-1)/(float)Server()->TickSpeed();
 	float Ct = (Server()->Tick()-m_StartTick)/(float)Server()->TickSpeed();
 	vec2 PrevPos = GetPos(Pt);
@@ -76,21 +104,25 @@ void CArtilleryProjectile::Tick()
 		{
 			GameServer()->CreateExplosion(CurPos, m_Owner, WEAPON_GRENADE, false);
 			GameServer()->CreateSound(CurPos, SOUND_GRENADE_EXPLODE);
+			GameServer()->m_World.DestroyEntity(this);
 		}
 		else if(m_Type == WEAPON_RIFLE && pOwnerChar)
 		{
-			new CArtilleryLaser(GameWorld(), CurPos, normalize(CurPos - PrevPos), 0.f, m_Owner, 0,
-					pOwnerChar->m_HasAirStrike ? g_Config.m_InfAirStrikeNumSuper : g_Config.m_InfAirStrikeNum,
-					g_Config.m_InfAirStrikeDeley);
 			if(pOwnerChar->m_HasAirStrike)
 			{
 				pOwnerChar->m_HasAirStrike = false;
 				pOwnerChar->m_HasIndicator = false;
 				pOwnerChar->GetPlayer()->ResetNumberKills();
+				m_AirStrikeTotal = g_Config.m_InfAirStrikeNumSuper;
+				m_AirStrikeLeft = g_Config.m_InfAirStrikeNumSuper;
 			}
+			else
+			{
+				m_AirStrikeTotal = g_Config.m_InfAirStrikeNum;
+				m_AirStrikeLeft = g_Config.m_InfAirStrikeNum;
+			}
+			m_DoAirStrikeTick = Server()->Tick() + (1000.f / Server()->TickSpeed()) / g_Config.m_InfAirStrikeDeley;
 		}
-
-		GameServer()->m_World.DestroyEntity(this);
 	}
 }
 

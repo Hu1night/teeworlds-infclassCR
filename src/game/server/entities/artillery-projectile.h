@@ -27,6 +27,9 @@ private:
 	int m_Type;
 	int m_LifeSpan;
 	float m_ExplodeHeight;
+	int m_AirStrikeLeft;
+	int m_AirStrikeTotal;
+	int m_DoAirStrikeTick;
 };
 
 #endif

@@ -48,7 +48,6 @@
 #include "police-shield.h"
 #include "anti-airmine.h"
 #include "artillery-projectile.h"
-#include "artillery-laser.h"
 
 //input count
 struct CInputCount
@@ -1564,6 +1563,11 @@ void CCharacter::FireWeapon()
 					new CLaserTeleport(GameWorld(), PortalPos, OldPos);
 					m_MagicTick = g_Config.m_InfMagicianMagicTick;
 				}
+			}
+			else if (GetClass() == PLAYERCLASS_ARTILLERY)
+			{
+				new CArtilleryProjectile(GameWorld(), m_pPlayer->GetCID(), m_Pos, Direction, Server()->TickSpeed() * 2, WEAPON_GRENADE);
+				GameServer()->CreateSound(m_Pos, SOUND_GRENADE_FIRE);
 			}
 			else
 			{
@@ -5172,6 +5176,8 @@ int CCharacter::GetInfWeaponID(int WID)
 				return INFWEAPON_REVIVER_GRENADE;
 			case PLAYERCLASS_MAGICIAN:
 				return INFWEAPON_MAGICIAN_GRENADE;
+			case PLAYERCLASS_ARTILLERY:
+				return INFWEAPON_ARTILLERY_GRENADE;
 			default:
 				return INFWEAPON_GRENADE;
 		}

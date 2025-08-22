@@ -21,6 +21,8 @@ CArtilleryProjectile::CArtilleryProjectile(CGameWorld *pGameWorld, int Owner, ve
 	m_ExplodeHeight = ExplodeHeight;
 	m_AirStrikeLeft = 0;
 	m_AirStrikeTotal = 0;
+	m_AirStrikeRange = 0;
+	m_DoAirStrikeTick = 0;
 	m_StartTick = Server()->Tick();
 
 	GameWorld()->InsertEntity(this);
@@ -72,10 +74,10 @@ void CArtilleryProjectile::Tick()
 			{
 				m_AirStrikeLeft -= 2;
 				new CArtilleryProjectile(GameWorld(), m_Owner,
-						m_ActualPos + vec2(-((rand() % 48) + 24.5f) * ((m_AirStrikeTotal - m_AirStrikeLeft - 1) % g_Config.m_InfAirStrikeRange), -640.f),
+						m_ActualPos + vec2(-((rand() % 48) + 24.5f) * ((m_AirStrikeTotal - m_AirStrikeLeft - 1) % m_AirStrikeRange), -640.f),
 						vec2(0.f, 1.f), Server()->TickSpeed() * 0.7f, WEAPON_GRENADE, m_ActualPos.y - 32.f);
 				new CArtilleryProjectile(GameWorld(), m_Owner,
-						m_ActualPos + vec2(((rand() % 48) + 24.5f) * ((m_AirStrikeTotal - m_AirStrikeLeft - 1) % g_Config.m_InfAirStrikeRange), -640.f),
+						m_ActualPos + vec2(((rand() % 48) + 24.5f) * ((m_AirStrikeTotal - m_AirStrikeLeft - 1) % m_AirStrikeRange), -640.f),
 						vec2(0.f, 1.f), Server()->TickSpeed() * 0.7f, WEAPON_GRENADE, m_ActualPos.y - 32.f);
 			}
 			m_DoAirStrikeTick = Server()->Tick() + g_Config.m_InfAirStrikeDeley / (1000.f / Server()->TickSpeed());
@@ -115,11 +117,13 @@ void CArtilleryProjectile::Tick()
 				pOwnerChar->GetPlayer()->ResetNumberKills();
 				m_AirStrikeTotal = g_Config.m_InfAirStrikeNumSuper;
 				m_AirStrikeLeft = g_Config.m_InfAirStrikeNumSuper;
+				m_AirStrikeRange = g_Config.m_InfAirStrikeRangeSuper;
 			}
 			else
 			{
 				m_AirStrikeTotal = g_Config.m_InfAirStrikeNum;
 				m_AirStrikeLeft = g_Config.m_InfAirStrikeNum;
+				m_AirStrikeRange = g_Config.m_InfAirStrikeRange;
 			}
 			m_DoAirStrikeTick = Server()->Tick() + (1000.f / Server()->TickSpeed()) / g_Config.m_InfAirStrikeDeley;
 		}

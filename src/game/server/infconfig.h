@@ -171,10 +171,11 @@ MACRO_CONFIG_INT(InfTurretAmmunition, inf_turret_ammunition, 3, 0, 10, CFGFLAG_S
 MACRO_CONFIG_INT(InfTurretMaxPerPlayer, inf_turret_max_per_player, 3, 0, 10, CFGFLAG_SERVER, "maximal number of turrets per player")
 
 //Artillery
-MACRO_CONFIG_INT(InfAirStrikeRange, inf_air_strike_range, 5, 0, 999, CFGFLAG_SERVER, "range of artillery's airstrike")
 MACRO_CONFIG_INT(InfAirStrikeDeley, inf_air_strike_deley, 250, 0, 10000, CFGFLAG_SERVER, "grenades deley of artillery's airstrike")
 MACRO_CONFIG_INT(InfAirStrikeNum, inf_air_strike_num, 3, 0, 999, CFGFLAG_SERVER, "grenades num of artillery's airstrike")
 MACRO_CONFIG_INT(InfAirStrikeNumSuper, inf_air_strike_num_super, 30, 0, 999, CFGFLAG_SERVER, "grenades num of artillery's superweapon")
+MACRO_CONFIG_INT(InfAirStrikeRange, inf_air_strike_range, 5, 0, 999, CFGFLAG_SERVER, "range of artillery's airstrike")
+MACRO_CONFIG_INT(InfAirStrikeRangeSuper, inf_air_strike_range_super, 5, 0, 999, CFGFLAG_SERVER, "range of artillery's airstrike")
 
 //SuperWeapons
 MACRO_CONFIG_INT(InfWhiteHoleMinimalKills, inf_white_hole_minimal_kills, 6, 0, 30, CFGFLAG_SERVER, "Minimal number of kills before white hole become available")

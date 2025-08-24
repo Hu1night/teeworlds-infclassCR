@@ -3305,7 +3305,8 @@ void CCharacter::TickDefered()
 {
 	// advance the dummy
 	{
-		CCharacterCore::CParams CoreTickParams(&GameWorld()->m_Core.m_Tuning);
+		CTuningParams FakeTuning;
+		CCharacterCore::CParams CoreTickParams(&FakeTuning);
 		CWorldCore TempWorld;
 		m_ReckoningCore.Init(&TempWorld, GameServer()->Collision());
 		m_ReckoningCore.Tick(false, &CoreTickParams);

@@ -535,7 +535,8 @@ void CGameControllerMOD::Snap(int SnappingClient)
 		int Support = 0;
 		int Sciogist = 0;
 		int Reviver = 0;
-		
+		int Doctor = 0;
+
 		CPlayerIterator<PLAYERITER_INGAME> Iter(GameServer()->m_apPlayers);
 		while(Iter.Next())
 		{
@@ -570,6 +571,9 @@ void CGameControllerMOD::Snap(int SnappingClient)
 				case PLAYERCLASS_REVIVER:
 					Reviver++;
 					break;
+				case PLAYERCLASS_DOCTOR:
+					Doctor++;
+					break;
 			}
 		}
 		
@@ -585,6 +589,10 @@ void CGameControllerMOD::Snap(int SnappingClient)
 			ClassMask |= CMapConverter::MASK_SCIOGIST;
 		if(Reviver < g_Config.m_InfReviverLimit)
 			ClassMask |= CMapConverter::MASK_REVIVER;
+		if(GameServer()->GetActivePlayerCount() > g_Config.m_InfMinDoctorPlayer2 && Doctor < g_Config.m_InfDoctorLimit2)
+			ClassMask |= CMapConverter::MASK_DOCTOR;
+		else if(GameServer()->GetActivePlayerCount() > g_Config.m_InfMinDoctorPlayer1 && GameServer()->GetActivePlayerCount() < g_Config.m_InfMinDoctorPlayer2 && Doctor < g_Config.m_InfDoctorLimit1)
+			ClassMask |= CMapConverter::MASK_DOCTOR;
 	}
 	
 	if(SnappingClient != -1)
@@ -718,6 +726,14 @@ int CGameControllerMOD::OnCharacterDeath(class CCharacter *pVictim, class CPlaye
 					GameServer()->SendEmoticon(pKiller->GetCID(), EMOTICON_MUSIC);
 					pKiller->GetCharacter()->IncreaseHealth(4);
 				}
+			}
+
+			if(pKiller->GetClass() == PLAYERCLASS_DOCTOR && Weapon == WEAPON_GRENADE)
+			{
+				Server()->RoundStatistics()->OnScoreEvent(pKiller->GetCID(), SCOREEVENT_KILL_INFECTED, pKiller->GetClass(), Server()->ClientName(pKiller->GetCID()), GameServer()->Console());
+				
+				if(pKiller->GetCharacter())
+					pKiller->GetCharacter()->m_PowerBattery += 25;
 			}
 		}
 	}
@@ -925,6 +941,7 @@ int CGameControllerMOD::ChooseHumanClass(const CPlayer *pPlayer) const
 	int nbDefender = 0;
 	int nbSciogist = 0;
 	int nbReviver = 0;
+	int nbDoctor = 0;
 	CPlayerIterator<PLAYERITER_INGAME> Iter(GameServer()->m_apPlayers);	
 	
 	while(Iter.Next())
@@ -958,6 +975,9 @@ int CGameControllerMOD::ChooseHumanClass(const CPlayer *pPlayer) const
 				break;
 			case PLAYERCLASS_REVIVER:
 				nbReviver++;
+				break;
+			case PLAYERCLASS_DOCTOR:
+				nbDoctor++;
 				break;
 		}
 	}
@@ -1011,6 +1031,9 @@ int CGameControllerMOD::ChooseHumanClass(const CPlayer *pPlayer) const
 		1.0f : 0.0f;
 	Probability[PLAYERCLASS_REVIVER - START_HUMANCLASS - 1] =
 		(nbReviver < g_Config.m_InfReviverLimit && g_Config.m_InfEnableReviver) ?
+		1.0f : 0.0f;
+	Probability[PLAYERCLASS_DOCTOR - START_HUMANCLASS - 1] =
+		(nbDoctor < g_Config.m_InfDoctorLimit1 && g_Config.m_InfEnableDoctor) ?
 		1.0f : 0.0f;
 
 	//Random is not fair enough. We keep the last two classes took by the player, and avoid to give him those again
@@ -1148,6 +1171,8 @@ bool CGameControllerMOD::IsEnabledClass(int PlayerClass) {
 			return g_Config.m_InfEnableMagician;
 		case PLAYERCLASS_ARTILLERY:
 			return g_Config.m_InfEnableArtillery;
+		case PLAYERCLASS_DOCTOR:
+			return g_Config.m_InfEnableDoctor;
 		default:
 			return false;
 	}
@@ -1164,6 +1189,7 @@ bool CGameControllerMOD::IsChoosableClass(int PlayerClass)
 	int nbHero = 0;
 	int nbSupport = 0;
 	int nbReviver = 0;
+	int nbDoctor = 0;
 
 	CPlayerIterator<PLAYERITER_INGAME> Iter(GameServer()->m_apPlayers);
 	while(Iter.Next())
@@ -1200,6 +1226,9 @@ bool CGameControllerMOD::IsChoosableClass(int PlayerClass)
 			case PLAYERCLASS_REVIVER:
 				nbReviver++;
 				break;
+			case PLAYERCLASS_DOCTOR:
+				nbDoctor++;
+				break;
 		}
 	}
 	
@@ -1228,6 +1257,8 @@ bool CGameControllerMOD::IsChoosableClass(int PlayerClass)
 			return (nbSciogist < g_Config.m_InfSciogistLimit);
 		case PLAYERCLASS_REVIVER:
 			return (nbReviver < g_Config.m_InfReviverLimit);
+		case PLAYERCLASS_DOCTOR:
+			return (nbDoctor < g_Config.m_InfDoctorLimit2);
 	}
 	
 	return false;

@@ -48,6 +48,8 @@
 #include "police-shield.h"
 #include "anti-airmine.h"
 #include "artillery-projectile.h"
+#include "doctor-grenade.h"
+#include "doctor-funnel.h"
 
 //input count
 struct CInputCount
@@ -144,7 +146,10 @@ m_pConsole(pConsole)
 
 	m_pHeroFlag = nullptr;
 	m_ResetKillsTime = 0;
-/* INFECTION MODIFICATION END *****************************************/
+	m_FunnelState = CDoctorFunnel::STATE_NO;
+	m_PowerBattery = g_Config.m_InfDoctorMaxPowerBattery;
+
+	/* INFECTION MODIFICATION END *****************************************/
 }
 
 bool CCharacter::
@@ -1042,6 +1047,21 @@ void CCharacter::FireWeapon()
 					}
 				}
 			}
+			else if (GetClass() == PLAYERCLASS_DOCTOR)
+			{
+				if (m_FunnelState == CDoctorFunnel::STATE_NO)
+				{
+					new CDoctorFunnel(GameWorld(), m_Pos, GetPlayer()->GetCID());
+					GameServer()->CreateSound(m_Pos, SOUND_RIFLE_FIRE);
+					m_FunnelState = CDoctorFunnel::STATE_FOLLOW;
+				}
+				else
+				{
+					m_FunnelState++;
+					if (m_FunnelState >= CDoctorFunnel::NUM_STATE)
+						m_FunnelState = CDoctorFunnel::STATE_FOLLOW;
+				}
+			}
 			else
 			{
 /* INFECTION MODIFICATION END *****************************************/
@@ -1367,6 +1387,14 @@ void CCharacter::FireWeapon()
 		} break;
 
 		case WEAPON_SHOTGUN:
+		if (GetClass() == PLAYERCLASS_DOCTOR)
+		{
+			GameServer()->CreateSound(m_Pos, SOUND_RIFLE_BOUNCE);
+			GameServer()->CreateSound(m_Pos, SOUND_WEAPON_SWITCH);
+			m_PowerBattery += g_Config.m_InfDoctorMaxPowerBattery;
+			GameServer()->SendChatTarget_Localization(GetPlayer()->GetCID(), CHATCATEGORY_HUMANS, _("You used an emergency battery!"));
+		}
+		else
 		{
 			int ShotSpread = 3;
 			if(GetClass() == PLAYERCLASS_BIOLOGIST)
@@ -1569,6 +1597,11 @@ void CCharacter::FireWeapon()
 				new CArtilleryProjectile(GameWorld(), m_pPlayer->GetCID(), m_Pos, Direction, Server()->TickSpeed() * 2, WEAPON_GRENADE);
 				GameServer()->CreateSound(m_Pos, SOUND_GRENADE_FIRE);
 			}
+			else if(GetClass() == PLAYERCLASS_DOCTOR)
+			{
+				new CDoctorGrenade(GameWorld(), m_pPlayer->GetCID(), ProjStartPos, Direction);
+				GameServer()->CreateSound(m_Pos, SOUND_GRENADE_FIRE);
+			}
 			else
 			{
 				if(m_HasStunGrenade) 
@@ -1677,6 +1710,11 @@ void CCharacter::FireWeapon()
 				}
 				else if (GetClass() == PLAYERCLASS_ARTILLERY) {
 					new CArtilleryProjectile(GameWorld(), m_pPlayer->GetCID(), m_Pos, Direction, Server()->TickSpeed() * 2, WEAPON_RIFLE);
+					GameServer()->CreateSound(m_Pos, SOUND_RIFLE_FIRE);
+				}
+				else if (GetClass() == PLAYERCLASS_DOCTOR) {
+					Damage = 10;
+					new CLaser(GameWorld(), m_Pos, Direction, GameServer()->Tuning()->m_LaserReach*0.7f, m_pPlayer->GetCID(), Damage);
 					GameServer()->CreateSound(m_Pos, SOUND_RIFLE_FIRE);
 				}
 				else
@@ -2766,6 +2804,13 @@ void CCharacter::Tick()
 							Broadcast = true;
 						}
 						break;
+					case CMapConverter::MENUCLASS_DOCTOR:
+						if(GameServer()->m_pController->IsChoosableClass(PLAYERCLASS_DOCTOR))
+						{
+							GameServer()->SendBroadcast_Localization(m_pPlayer->GetCID(), BROADCAST_PRIORITY_INTERFACE, BROADCAST_DURATION_REALTIME, _("Doctor"), NULL);
+							Broadcast = true;
+						}
+						break;
 				}
 			}
 			
@@ -2833,6 +2878,9 @@ void CCharacter::Tick()
 						break;
 					case CMapConverter::MENUCLASS_ARTILLERY:
 						NewClass = PLAYERCLASS_ARTILLERY;
+						break;
+					case CMapConverter::MENUCLASS_DOCTOR:
+						NewClass = PLAYERCLASS_DOCTOR;
 						break;
 				}
 				
@@ -3672,6 +3720,12 @@ bool CCharacter::TakeDamage(vec2 Force, int Dmg, int From, int Weapon, int Mode)
 	{
 		Dmg = 12;
 		// A zombie can't infect a hero
+		Mode = TAKEDAMAGEMODE_NOINFECTION;
+	}
+
+	if(GetClass() == PLAYERCLASS_DOCTOR  && Mode == TAKEDAMAGEMODE_INFECTION)
+	{
+		Dmg = 10;
 		Mode = TAKEDAMAGEMODE_NOINFECTION;
 	}
 	
@@ -4581,7 +4635,26 @@ void CCharacter::ClassSpawnAttributes()
 				GameServer()->SendChatTarget_Localization(m_pPlayer->GetCID(), CHATCATEGORY_DEFAULT, _("Type “/help {str:ClassName}” for more information about your class"), "ClassName", "artillery", NULL);
 				m_pPlayer->m_knownClass[PLAYERCLASS_ARTILLERY] = true;
 			}
-			break;	
+			break;
+		case PLAYERCLASS_DOCTOR:
+			RemoveAllGun();
+			m_pPlayer->m_InfectionTick = -1;
+			m_Health = 20;
+			m_Armor = 10;		
+			m_aWeapons[WEAPON_HAMMER].m_Got = true;
+			GiveWeapon(WEAPON_HAMMER, -1);
+			GiveWeapon(WEAPON_GUN, -1);
+			GiveWeapon(WEAPON_SHOTGUN, -1);
+			GiveWeapon(WEAPON_GRENADE, -1);
+			GiveWeapon(WEAPON_RIFLE, -1);
+			m_ActiveWeapon = WEAPON_HAMMER;
+			
+			GameServer()->SendBroadcast_ClassIntro(m_pPlayer->GetCID(), PLAYERCLASS_DOCTOR);
+			if(!m_pPlayer->IsKnownClass(PLAYERCLASS_DOCTOR))
+			{
+				m_pPlayer->m_knownClass[PLAYERCLASS_DOCTOR] = true;
+			}
+			break;
 		case PLAYERCLASS_NONE:
 			m_pPlayer->m_InfectionTick = -1;
 			m_Health = 10;
@@ -5107,6 +5180,8 @@ int CCharacter::GetInfWeaponID(int WID)
 				return INFWEAPON_REVIVER_HAMMER;
 			case PLAYERCLASS_SLIME://infect class
 				return INFWEAPON_SLIME_HAMMER;
+			case PLAYERCLASS_DOCTOR:
+				return INFWEAPON_DOCTOR_HAMMER;
 			default:
 				return INFWEAPON_HAMMER;
 		}
@@ -5148,6 +5223,8 @@ int CCharacter::GetInfWeaponID(int WID)
 				return INFWEAPON_MAGICIAN_SHOTGUN;
 			case PLAYERCLASS_ARTILLERY:
 				return INFWEAPON_ARTILLERY_SHOTGUN;
+			case PLAYERCLASS_DOCTOR:
+				return INFWEAPON_DOCTOR_SHOTGUN;
 			default:
 				return INFWEAPON_SHOTGUN;
 		}
@@ -5180,6 +5257,8 @@ int CCharacter::GetInfWeaponID(int WID)
 				return INFWEAPON_MAGICIAN_GRENADE;
 			case PLAYERCLASS_ARTILLERY:
 				return INFWEAPON_ARTILLERY_GRENADE;
+			case PLAYERCLASS_DOCTOR:
+				return INFWEAPON_DOCTOR_GRENADE;
 			default:
 				return INFWEAPON_GRENADE;
 		}
@@ -5214,6 +5293,8 @@ int CCharacter::GetInfWeaponID(int WID)
 				return INFWEAPON_REVIVER_RIFLE;
 			case PLAYERCLASS_ARTILLERY:
 				return INFWEAPON_ARTILLERY_RIFLE;
+			case PLAYERCLASS_DOCTOR:
+				return INFWEAPON_DOCTOR_RIFLE;
 			default:
 				return INFWEAPON_RIFLE;
 		}
